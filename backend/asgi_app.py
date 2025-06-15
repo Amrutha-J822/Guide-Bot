@@ -75,9 +75,19 @@ def start_pause_timer(sio, sid):
     paused_state['timer'].start()
 
 # Use only the React frontend origin for CORS
-FRONTEND_ORIGIN = "http://localhost:3000"
+FRONTEND_ORIGIN = os.getenv("FRONTEND_URL", "http://localhost:3000")
+ALLOWED_ORIGINS = [
+    FRONTEND_ORIGIN,
+    "http://localhost:3000",
+    "https://guide-bot-6i37.onrender.com"
+]
 
-sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins=[FRONTEND_ORIGIN])
+sio = socketio.AsyncServer(
+    async_mode='asgi',
+    cors_allowed_origins=ALLOWED_ORIGINS,
+    ping_timeout=60,
+    ping_interval=25
+)
 app = FastAPI()
 
 @sio.event

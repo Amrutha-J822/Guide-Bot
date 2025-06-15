@@ -279,7 +279,24 @@ const App: React.FC = () => {
         ? window.location.origin
         : 'http://localhost:5000';
 
-    socketRef.current = io(backendUrl);
+    socketRef.current = io(backendUrl, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 20000,
+      forceNew: true
+    });
+
+    socketRef.current.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+      setConnectionError(true);
+    });
+
+    socketRef.current.on('connect', () => {
+      console.log('Socket connected successfully');
+      setConnectionError(false);
+    });
 
     socketRef.current.on('pause', (data: { message: string }) => {
       setIsPaused(true);
