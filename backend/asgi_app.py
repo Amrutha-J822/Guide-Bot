@@ -106,18 +106,33 @@ async def handle_audio_chunk(sid, data):
             time.sleep(0.1)
         current_response_event = threading.Event()
 
-        audio_data = base64.b64decode(data['audio'])
-        audio_file = io.BytesIO(audio_data)
-        audio_file.name = "audio.wav"
-        print("Transcribing audio...")
-        transcription = client.audio.transcriptions.create(
-            model="whisper-1",
-            file=audio_file
-        )
-        transcript = transcription.text.strip()
-        print(f"Transcript: {transcript}")
+        transcript = None
+        try:
+            audio_data = base64.b64decode(data['audio'])
+            audio_file = io.BytesIO(audio_data)
+            audio_file.name = "audio.wav"
+            print("Transcribing audio...")
+            transcription = client.audio.transcriptions.create(
+                model="whisper-1",
+                file=audio_file
+            )
+            transcript = transcription.text.strip()
+            print(f"Transcript: {transcript}")
+        except Exception as e:
+            print("Error in transcription:", e)
+            transcript = None
 
-        # Stronger, more explicit system prompt
+        if not transcript:
+            await sio.emit('response_chunk', {'text': FALLBACK_MESSAGE}, to=sid)
+            tts = gTTS(text=FALLBACK_MESSAGE, lang='en')
+            buf = io.BytesIO()
+            tts.write_to_fp(buf)
+            buf.seek(0)
+            audio_b64 = base64.b64encode(buf.read()).decode('utf-8')
+            await sio.emit('audio_response', {'audio': audio_b64}, to=sid)
+            current_response_event.set()
+            return
+
         system_prompt = (
             "You are an expert on Indian tourism. "
             "Always answer questions about any place, city, monument, landmark, food, culture, or history in India as Indian tourism. "
@@ -125,21 +140,9 @@ async def handle_audio_chunk(sid, data):
             "If the question is not about India or Indian tourism, reply exactly: 'I cannot reply to this question. Please ask something related to Indian tourism.'"
         )
         messages = [
-            {
-                "role": "system",
-                "content": system_prompt
-            }
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": transcript}
         ]
-        if paused_state['is_paused']:
-            previous_context = paused_state['response_text'] or ""
-            paused_state['is_paused'] = False
-            paused_state['response_text'] = None
-            paused_state['position'] = 0
-        else:
-            previous_context = None
-        if previous_context:
-            messages.append({"role": "assistant", "content": previous_context})
-        messages.append({"role": "user", "content": transcript})
 
         response_text = ""
         def stream_llm_and_tts():
@@ -151,8 +154,6 @@ async def handle_audio_chunk(sid, data):
                     messages=messages,
                     stream=True
                 )
-                
-                # Stream text chunks
                 for chunk in stream:
                     if current_response_event.is_set():
                         break
@@ -160,24 +161,25 @@ async def handle_audio_chunk(sid, data):
                     if delta:
                         response_text += delta
                         asyncio.run(sio.emit('response_chunk', {'text': delta}, to=sid))
-                
-                # Only generate and send audio if we have a complete response
                 if response_text and not current_response_event.is_set():
                     print(f"Final LLM response: {response_text}")
-                    # Clean text for TTS
                     tts_text = clean_text_for_tts(response_text)
-                    # Generate TTS
                     tts = gTTS(text=tts_text, lang='en')
                     buf = io.BytesIO()
                     tts.write_to_fp(buf)
                     buf.seek(0)
                     audio_b64 = base64.b64encode(buf.read()).decode('utf-8')
-                    # Send final audio
                     asyncio.run(sio.emit('audio_response', {'audio': audio_b64}, to=sid))
-                
             except Exception as e:
-                print(f"Error in stream_llm_and_tts: {e}")
-                asyncio.run(sio.emit('error', {'message': str(e)}, to=sid))
+                print("Error in stream_llm_and_tts:", e)
+                # Always send fallback message/audio if LLM or TTS fails
+                asyncio.run(sio.emit('response_chunk', {'text': FALLBACK_MESSAGE}, to=sid))
+                tts = gTTS(text=FALLBACK_MESSAGE, lang='en')
+                buf = io.BytesIO()
+                tts.write_to_fp(buf)
+                buf.seek(0)
+                audio_b64 = base64.b64encode(buf.read()).decode('utf-8')
+                asyncio.run(sio.emit('audio_response', {'audio': audio_b64}, to=sid))
             finally:
                 current_response_event.set()
         t = threading.Thread(target=stream_llm_and_tts)
@@ -189,7 +191,15 @@ async def handle_audio_chunk(sid, data):
         import traceback
         print("Error in handle_audio_chunk:")
         traceback.print_exc()
-        await sio.emit('error', {'message': str(e)}, to=sid)
+        # Always send fallback message/audio if something else fails
+        await sio.emit('response_chunk', {'text': FALLBACK_MESSAGE}, to=sid)
+        tts = gTTS(text=FALLBACK_MESSAGE, lang='en')
+        buf = io.BytesIO()
+        tts.write_to_fp(buf)
+        buf.seek(0)
+        audio_b64 = base64.b64encode(buf.read()).decode('utf-8')
+        await sio.emit('audio_response', {'audio': audio_b64}, to=sid)
+        current_response_event.set()
 
 # Mount Socket.IO ASGI app onto FastAPI
 app.mount("/socket.io", socketio.ASGIApp(sio, socketio_path="/socket.io"))
@@ -203,4 +213,21 @@ app.mount(
 
 @app.get("/")
 def root():
-    return {"message": "Server is running! (FastAPI + Socket.IO)"} 
+    return {"message": "Server is running! (FastAPI + Socket.IO)"}
+
+@app.get("/test")
+def test():
+    return {"status": "ok"}
+
+@app.get("/test-openai")
+def test_openai():
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": "Hello"}],
+            stream=False
+        )
+        return {"result": resp.choices[0].message.content}
+    except Exception as e:
+        import traceback
+        return {"error": str(e)} 
