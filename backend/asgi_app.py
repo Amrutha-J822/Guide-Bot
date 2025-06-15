@@ -10,6 +10,7 @@ import openai
 from gtts import gTTS
 import socketio
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 # Load environment variables
 load_dotenv()
@@ -182,6 +183,13 @@ async def handle_audio_chunk(sid, data):
 
 # Mount Socket.IO ASGI app onto FastAPI
 app.mount("/socket.io", socketio.ASGIApp(sio, socketio_path="/socket.io"))
+
+# Serve React static files from frontend/build
+app.mount(
+    "/",
+    StaticFiles(directory=os.path.join(os.path.dirname(__file__), "../frontend/build"), html=True),
+    name="static"
+)
 
 @app.get("/")
 def root():
