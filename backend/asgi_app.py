@@ -74,12 +74,10 @@ def start_pause_timer(sio, sid):
     paused_state['timer'] = threading.Thread(target=timer_func)
     paused_state['timer'].start()
 
-# Use only the React frontend origin for CORS
-FRONTEND_ORIGIN = os.getenv("FRONTEND_URL", "http://localhost:3000")
+# Use only the deployed frontend and localhost for CORS
 ALLOWED_ORIGINS = [
-    FRONTEND_ORIGIN,
-    "http://localhost:3000",
-    "https://guide-bot-6i37.onrender.com"
+    "https://guide-bot-6i37.onrender.com",
+    "http://localhost:3000"
 ]
 
 sio = socketio.AsyncServer(
