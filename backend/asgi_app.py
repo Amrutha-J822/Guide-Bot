@@ -186,7 +186,9 @@ async def handle_audio_chunk(sid, data):
         paused_state['response_text'] = response_text
         paused_state['position'] = 0
     except Exception as e:
-        print(f"Error in handle_audio_chunk: {e}")
+        import traceback
+        print("Error in handle_audio_chunk:")
+        traceback.print_exc()
         await sio.emit('error', {'message': str(e)}, to=sid)
 
 # Mount Socket.IO ASGI app onto FastAPI
