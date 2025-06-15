@@ -1,5 +1,4 @@
-````markdown
-# guide_ai
+# guide_ai🤖
 
 A hands-free, conversational AI assistant for exploring Indian tourism. Speak your questions—no buttons required—and get instant, spoken, and written answers.
 
