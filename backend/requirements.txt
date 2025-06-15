@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-socketio[asgi]
+openai
+gTTS
+python-dotenv
+flask-cors
+pandas
+pinecone-client
