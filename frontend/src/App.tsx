@@ -418,7 +418,8 @@ const App: React.FC = () => {
               style={{ backgroundColor: '#e57373', color: 'white', padding: '6px 16px', border: 'none', borderRadius: 4, fontSize: 14, cursor: 'pointer', boxShadow: 'none', fontWeight: 500 }}
               onClick={() => {
                 if (!isPaused) {
-                  console.log('Pause button clicked');
+                  // PAUSE
+                  socketRef.current?.emit('pause');
                   stopListening();
                   if (audioRef.current) {
                     audioRef.current.pause();
@@ -429,27 +430,15 @@ const App: React.FC = () => {
                     botResponseBuffer.current = '';
                   }
                   setIsPaused(true);
-                  console.log('Paused: isPaused set to true');
-                  // Clear any resume timer
                   if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
                 } else {
-                  console.log('Resume button clicked');
+                  // RESUME
+                  socketRef.current?.emit('resume');
                   setIsPaused(false);
-                  startListening();
-                  console.log('Resumed: isPaused set to false, listening started');
-                  // Start 20s timer to replay last TTS if no speech
-                  if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
-                  resumeTimeoutRef.current = window.setTimeout(() => {
-                    if (lastTTSRef.current && lastResponseTextRef.current) {
-                      setMessages(prev => [...prev, lastResponseTextRef.current!]);
-                      const audio = new Audio(`data:audio/mp3;base64,${lastTTSRef.current}`);
-                      audioRef.current = audio;
-                      audio.play();
-                    }
-                  }, 20000);
+                  // Do NOT start listening here; resume will stream the rest of the previous answer
                 }
               }}
-              disabled={false} // Always enabled for debugging
+              disabled={false}
             >
               {isPaused ? '▶️ Resume' : '⏸ Pause'}
             </button>

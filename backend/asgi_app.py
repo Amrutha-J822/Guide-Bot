@@ -205,6 +205,42 @@ async def handle_audio_chunk(sid, data):
         await sio.emit('audio_response', {'audio': audio_b64}, to=sid)
         current_response_event.set()
 
+@sio.on('pause')
+async def handle_pause(sid):
+    print(f"Pause requested by {sid}")
+    paused_state['is_paused'] = True
+    # The current response_text and position should already be tracked during streaming
+    await sio.emit('response_chunk', {'text': PAUSE_MESSAGE}, to=sid)
+
+@sio.on('resume')
+async def handle_resume(sid):
+    print(f"Resume requested by {sid}")
+    if paused_state['is_paused'] and paused_state['response_text']:
+        paused_state['is_paused'] = False
+        # Resume streaming from the last paused position
+        response_text = paused_state['response_text']
+        position = paused_state['position']
+        remaining_text = response_text[position:]
+        chunk_size = 100  # Adjust as needed for streaming granularity
+        while position < len(response_text):
+            if paused_state['is_paused']:
+                break
+            chunk = response_text[position:position+chunk_size]
+            await sio.emit('response_chunk', {'text': chunk}, to=sid)
+            position += chunk_size
+            paused_state['position'] = position
+            await asyncio.sleep(0.1)  # Simulate streaming delay
+        # After finishing, send TTS audio again for the remaining text
+        tts_text = clean_text_for_tts(remaining_text)
+        tts = gTTS(text=tts_text, lang='en')
+        buf = io.BytesIO()
+        tts.write_to_fp(buf)
+        buf.seek(0)
+        audio_b64 = base64.b64encode(buf.read()).decode('utf-8')
+        await sio.emit('audio_response', {'audio': audio_b64}, to=sid)
+        paused_state['response_text'] = None
+        paused_state['position'] = 0
+
 # Mount Socket.IO ASGI app onto FastAPI
 app.mount("/socket.io", socketio.ASGIApp(sio, socketio_path="/socket.io"))
 
