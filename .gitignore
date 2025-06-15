@@ -1,4 +1,8 @@
 .env
 venv/
 frontend/node_modules/
+<<<<<<< HEAD
 frontend/build/
+=======
+frontend/build/
+>>>>>>> a41790bf34eaec7402cf6c357cba4eda30feb128
