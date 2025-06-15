@@ -122,7 +122,8 @@ async def handle_audio_chunk(sid, data):
             print("Error in transcription:", e)
             transcript = None
 
-        if not transcript:
+        if not transcript or transcript.strip() == "":
+            print("Transcript is empty or None. Sending fallback.")
             await sio.emit('response_chunk', {'text': FALLBACK_MESSAGE}, to=sid)
             tts = gTTS(text=FALLBACK_MESSAGE, lang='en')
             buf = io.BytesIO()
@@ -132,6 +133,8 @@ async def handle_audio_chunk(sid, data):
             await sio.emit('audio_response', {'audio': audio_b64}, to=sid)
             current_response_event.set()
             return
+        else:
+            print(f"Transcript sent to LLM: {transcript}")
 
         system_prompt = (
             "You are an expert on Indian tourism. "
@@ -161,6 +164,7 @@ async def handle_audio_chunk(sid, data):
                     if delta:
                         response_text += delta
                         asyncio.run(sio.emit('response_chunk', {'text': delta}, to=sid))
+                print(f"LLM response: {response_text}")
                 if response_text and not current_response_event.is_set():
                     print(f"Final LLM response: {response_text}")
                     tts_text = clean_text_for_tts(response_text)
