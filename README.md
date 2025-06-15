@@ -1,6 +1,6 @@
 # Guide-Bot🤖
 
-A hands-free, conversational AI assistant for exploring Indian tourism. Speak your questions—no buttons required—and get instant, spoken, and written answers.
+A hands-free, conversational AI assistant for exploring Indian tourism. Speak your questions, no buttons needed and get instant, spoken, and written answers.
 
 ---
 
