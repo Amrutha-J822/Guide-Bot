@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import io, { Socket } from 'socket.io-client';
 import './App.css';
 
+declare const process: { env: { NODE_ENV: string } };
+
 // Add Web Speech API type declarations
 interface SpeechRecognition extends EventTarget {
   continuous: boolean;
@@ -271,7 +273,13 @@ const App: React.FC = () => {
   }, [monitorVoiceActivity, sendAudioChunk, stopListening]);
 
   useEffect(() => {
-    socketRef.current = io('http://localhost:5000');
+    // Use the same origin in production, or localhost in development
+    const backendUrl =
+      process.env.NODE_ENV === 'production'
+        ? window.location.origin
+        : 'http://localhost:5000';
+
+    socketRef.current = io(backendUrl);
 
     socketRef.current.on('pause', (data: { message: string }) => {
       setIsPaused(true);
