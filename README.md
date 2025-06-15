@@ -47,8 +47,7 @@ A hands-free, conversational AI assistant for exploring Indian tourism. Speak yo
 1. Navigate to the backend folder:
    ```sh
    cd guide_ai/backend
-````
-
+   
 2. Create a `.env` file and add your keys:
 
    ```ini
