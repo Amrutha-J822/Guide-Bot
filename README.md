@@ -20,6 +20,18 @@ A hands-free, conversational AI assistant for exploring Indian tourism. Speak yo
 11. [Credits](#credits)
 
 ---
+## Architecture
+
+```
+User Mic → Frontend (SpeechRecognition + MediaRecorder)
+                       ↓
+               WebSocket (socket.io)
+                       ↓
+                 Backend (FastAPI)
+      Whisper → GPT-4o → gTTS (TTS) → Response
+```
+
+---
 
 ## Features
 - **Hands-free interaction**: Speak to ask questions about Indian cities, monuments, cuisine, culture, and more.
@@ -131,19 +143,6 @@ A hands-free, conversational AI assistant for exploring Indian tourism. Speak yo
 * **Frontend**: Vercel or Netlify
 * **Backend**: Render.com, Railway, or self-host on a VPS
 * Set environment variables in your deployment platform to match `.env`.
-
----
-
-## Architecture
-
-```
-User Mic → Frontend (SpeechRecognition + MediaRecorder)
-                       ↓
-               WebSocket (socket.io)
-                       ↓
-                 Backend (FastAPI)
-      Whisper → GPT-4o → gTTS (TTS) → Response
-```
 
 ---
 
