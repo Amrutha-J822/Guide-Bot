@@ -5,9 +5,7 @@ A hands-free, conversational AI assistant for exploring Indian tourism. Speak yo
 
 ## Demo
 
-<video src="./assets/Guide-Bot.mp4" controls width="600">
-  Your browser does not support the video tag.
-</video>
+[▶️ Watch the demo video](./assets/Guide-Bot.mp4)
 
 ---
 
