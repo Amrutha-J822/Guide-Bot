@@ -2,10 +2,13 @@
 
 A hands-free, conversational AI assistant for exploring Indian tourism. Speak your questions, no buttons needed and get instant, spoken, and written answers.
 ---
+
 ## Demo
-<video src="assets\Guide-Bot.mp4" controls width="600">
+
+<video src="./assets/Guide-Bot.mp4" controls width="600">
   Your browser does not support the video tag.
 </video>
+
 ---
 
 ## Table of Contents
